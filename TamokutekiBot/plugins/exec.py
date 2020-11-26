@@ -1,3 +1,20 @@
+# Copyright (C) 2020 DragSama. All rights reserved. Source code available under the AGPL.
+#
+# This file is part of TamokutekiBot.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from TamokutekiBot.helpers import command
 
 from telethon import events
@@ -9,7 +26,7 @@ import sys
 # Thanks to stackoverflow for existing https://stackoverflow.com/questions/3906232/python-get-the-print-output-in-an-exec-statement
 
 
-@Tamokuteki.on(events.NewMessage(pattern="eval", outgoing=True))
+@Tamokuteki.on(events.NewMessage(pattern="\.eval", outgoing=True))
 async def evaluate(event):
     split = event.text.split(" ", 1)
     if len(split) == 1:
@@ -22,7 +39,7 @@ async def evaluate(event):
     await event.edit(str(evaluation))
 
 
-@Tamokuteki.on(events.NewMessage(pattern="exec", outgoing=True))
+@Tamokuteki.on(events.NewMessage(pattern="\.exec", outgoing=True))
 async def execute(event):
     split = event.text.split(" ", 1)
     if len(split) == 1:
@@ -51,6 +68,11 @@ async def execute(event):
         final += "**Output**:\n`" + stderr
     else:
         final = "`OwO no output"
+    if len(final) >= 4096:
+        with open('output.txt', 'w+') as file:
+            file.write(final)
+        await Tamokuteki.send_file(event.chat_id, 'output.txt', caption = code)
+        return
     await event.edit(final + '`')
 
 

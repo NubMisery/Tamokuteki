@@ -1,3 +1,20 @@
+# Copyright (C) 2020 DragSama. All rights reserved. Source code available under the AGPL.
+#
+# This file is part of TamokutekiBot.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from telethon import TelegramClient
 import aiohttp
 
@@ -13,6 +30,7 @@ class TamokutekiClient(TelegramClient):
         self.__plugins__ = {}
         super().__init__(*args, **kwargs)
         self.aio_session = aiohttp.ClientSession()
+        self.failed_plugins = {}
         core_plugin =  Path(__file__).parent / "core.py"
         help_plugin = Path(__file__).parent / "help.py"
         self.load_plugin(core_plugin)
@@ -26,15 +44,19 @@ class TamokutekiClient(TelegramClient):
 
         path = Path(path)
         stem = path.stem
-        if stem == "__init__":
-            return
-        spec = importlib.spec_from_file_location(stem, path)
-        module = importlib.module_from_spec(spec)
-        module.Tamokuteki = self
-        module.session = self.aio_session
-        spec.loader.exec_module(module)
-        self.__plugins__[stem] = module
-        logging.info(f"Loaded plugin {stem}")
+        try:
+            spec = importlib.spec_from_file_location(stem, path)
+            module = importlib.module_from_spec(spec)
+            module.Tamokuteki = self
+            module.session = self.aio_session
+            spec.loader.exec_module(module)
+            if hasattr(module, "__type__") and module.__type__ == "IGNORE":
+                return
+            self.__plugins__[stem] = module
+            logging.info(f"Loaded plugin {stem}")
+        except Exception as e:
+            self.failed_plugins[stem] = e
+            logging.error(f'Failed to load plugin{stem}\n{e}')
 
     def unload_plugin(self, plugin: str) -> None:
         """Unload plugin."""
